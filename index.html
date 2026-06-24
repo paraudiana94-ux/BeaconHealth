@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beacon Health — Trust Prototype (single file)</title>
+<!--
+  Beacon Health — Trust & Transparency prototype. SINGLE SELF-CONTAINED HTML FILE.
+  Option 1 "Trust Layers" + Option 2 "Trust Companion" hybrid.
+  Built by Róisín Doyle (Maker), from Cian Walsh's spec, against Aoife Brennan's findings.
+  All data is SYNTHETIC and labelled as such. Prototype, not production.
+  No build step, no dependencies, no server: just open this file in a browser.
+-->
+<style>
+/* ===== Beacon Health prototype styles — calm, clinical palette ===== */
+:root {
+  --navy: #1f3864; --teal: #11675c; --teal-2: #2e938a; --teal-bg: #eff6f4;
+  --blue: #2e75b6; --ai: #6a3fb5; --ai-bg: #f1ecfa; --human: #11675c; --human-bg: #eff6f4;
+  --ink: #222; --muted: #5b6470; --line: #dfe4ea; --ok: #1e7d4f; --warn: #b54708; --danger: #b42318;
+  --card: #fff; --bg: #f6f8fa; --radius: 12px;
+  --shadow: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.06);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink); background: var(--bg); line-height: 1.5; }
+a { color: var(--blue); }
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 20px 60px; }
+.topnav { background: var(--navy); color: #fff; padding: 10px 20px; display: flex; gap: 10px;
+  align-items: center; flex-wrap: wrap; }
+.topnav .brand { font-weight: 700; letter-spacing: .3px; margin-right: 8px; }
+.topnav button { color: #cfe0f5; background: transparent; border: 0; cursor: pointer;
+  padding: 6px 12px; border-radius: 8px; font-size: 14px; font-family: inherit; }
+.topnav button:hover { background: rgba(255,255,255,.12); }
+.topnav button.active { background: #fff; color: var(--navy); font-weight: 600; }
+.synthetic-flag { margin-left: auto; background: #fde7c7; color: #7a4a06; font-size: 12px;
+  font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.view { display: none; }
+.view.active { display: block; }
+.companion { position: sticky; top: 0; z-index: 30; background: #fff;
+  border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
+.companion-inner { max-width: 920px; margin: 0 auto; padding: 10px 20px; display: flex;
+  gap: 14px; align-items: center; flex-wrap: wrap; }
+.companion .who { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.ai { background: var(--ai); } .dot.human { background: var(--human); }
+.companion .chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: #fafbfc; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 6px; }
+.companion .chip b { color: var(--ink); font-weight: 600; }
+.companion .spacer { margin-left: auto; }
+.state-pill { font-weight: 700; font-size: 12.5px; padding: 4px 12px; border-radius: 999px; }
+.state-given { background: #e7f4ed; color: var(--ok); }
+.state-partial { background: #fef3e2; color: var(--warn); }
+.state-withdrawn { background: #fdecea; color: var(--danger); }
+.state-pending { background: #eef1f4; color: var(--muted); }
+.btn { border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 7px 14px;
+  border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600; font-family: inherit; }
+.btn:hover { background: #f3f5f7; }
+.btn.primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+.btn.primary:hover { background: #0d544b; }
+.btn.danger { background: #fff; color: var(--danger); border-color: #f3c0bb; }
+.btn.danger:hover { background: #fdecea; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+h1 { font-size: 24px; margin: 26px 0 4px; color: var(--navy); }
+h2 { font-size: 18px; margin: 24px 0 8px; color: var(--teal); }
+.lead { color: var(--muted); margin-top: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px; box-shadow: var(--shadow); margin: 16px 0; }
+.card h3 { margin: 0 0 4px; font-size: 16px; }
+.muted { color: var(--muted); } .small { font-size: 13px; }
+.consent-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: flex-start; }
+.consent-item:last-child { border-bottom: 0; }
+.consent-item .meta { flex: 1; }
+.consent-item .meta .label { font-weight: 600; }
+.consent-item .meta .req { font-size: 11px; color: var(--warn); font-weight: 700; text-transform: uppercase; margin-left: 6px; }
+.consent-item .meta .aiflag { font-size: 11px; color: var(--ai); font-weight: 700; margin-left: 6px; }
+.consent-item .meta .desc { color: var(--muted); font-size: 13.5px; }
+.switch { position: relative; width: 46px; height: 26px; flex: 0 0 auto; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; inset: 0; background: #cfd6de; border-radius: 999px; transition: .15s; cursor: pointer; }
+.slider:before { content: ""; position: absolute; height: 20px; width: 20px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: .15s; }
+input:checked + .slider { background: var(--teal); }
+input:checked + .slider:before { transform: translateX(20px); }
+input:disabled + .slider { opacity: .6; }
+.layered-summary { background: var(--teal-bg); border-left: 4px solid var(--teal-2); padding: 12px 14px;
+  border-radius: 8px; margin-bottom: 8px; }
+details.fulltext { margin-top: 10px; }
+details.fulltext summary { cursor: pointer; color: var(--blue); font-size: 13.5px; }
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 78%; padding: 10px 14px; border-radius: 14px; position: relative; }
+.msg .sender-tag { font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.msg.ai { align-self: flex-start; background: var(--ai-bg); border: 1px solid #e1d7f5; }
+.msg.ai .sender-tag { color: var(--ai); }
+.msg.human { align-self: flex-start; background: var(--human-bg); border: 1px solid #cfe6e1; }
+.msg.human .sender-tag { color: var(--human); }
+.msg.patient { align-self: flex-end; background: #eef2f7; border: 1px solid #dde4ec; }
+.msg .review { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.composer { display: flex; gap: 8px; margin-top: 12px; }
+.composer input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+.blocked-note { background: #fdecea; border: 1px solid #f3c0bb; color: var(--danger);
+  padding: 10px 12px; border-radius: 8px; font-size: 13.5px; }
+.factor { margin: 8px 0; }
+.factor .row { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 3px; }
+.bar { height: 9px; background: #eaeef3; border-radius: 999px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--teal-2); }
+.conf { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; flex-wrap: wrap; }
+.conf .badge { padding: 3px 10px; border-radius: 999px; font-size: 12.5px; }
+.conf-high { background: #e7f4ed; color: var(--ok); }
+.conf-moderate { background: #fef3e2; color: var(--warn); }
+.conf-low { background: #fdecea; color: var(--danger); }
+.override-box { margin-top: 12px; }
+.override-box textarea { width: 100%; min-height: 60px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.decision-log { font-size: 13px; } .decision-log li { margin: 4px 0; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.kpi { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.kpi .v { font-size: 30px; font-weight: 800; color: var(--navy); }
+.kpi .l { font-size: 13px; color: var(--muted); }
+.kpi .delta { font-size: 12.5px; font-weight: 700; }
+.delta.up { color: var(--ok); } .delta.down { color: var(--danger); }
+.chart { display: flex; align-items: flex-end; gap: 10px; height: 160px; padding-top: 10px; }
+.chart .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; }
+.chart .col .b { width: 70%; background: var(--teal-2); border-radius: 6px 6px 0 0; }
+.chart .col .b.alt { background: var(--blue); }
+.chart .col .cap { font-size: 11px; color: var(--muted); }
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.tbl th, table.tbl td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+table.tbl th { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .3px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--navy);
+  color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+@media (max-width: 640px) { .kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span class="brand">Beacon Health</span>
+  <button data-view="patient" class="active">Patient app</button>
+  <button data-view="clinician">Clinician console</button>
+  <button data-view="dashboard">Trust dashboard</button>
+  <span class="synthetic-flag">SYNTHETIC PROTOTYPE — no real patient data</span>
+</nav>
+
+<!-- ============ PATIENT VIEW ============ -->
+<section id="view-patient" class="view active">
+  <div class="companion">
+    <div class="companion-inner">
+      <span class="who"><span id="who-dot" class="dot human"></span><span id="who-text">Speaking with: a human therapist</span></span>
+      <span class="chip">Data in use: <b id="data-in-use">none yet</b></span>
+      <span class="spacer"></span>
+      <span class="chip">Consent</span>
+      <span id="state-pill" class="state-pill state-pending">Pending</span>
+      <button id="withdraw-btn" class="btn danger" title="Stop all processing immediately">Withdraw / pause</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <h1>Welcome to Beacon</h1>
+    <p class="lead">Before your first session, here is exactly what we’d use and why. Turn on only what you’re comfortable with — you can change or withdraw any of it at any time using the bar above.</p>
+    <div class="card">
+      <h3>Your consent</h3>
+      <div class="layered-summary small">
+        <b>In plain language:</b> we need your contact details and your session disclosures to provide care.
+        Everything below marked <span style="color:var(--ai);font-weight:700">AI</span> is optional and a human therapist always reviews it. We never sell your data.
+      </div>
+      <div id="consent-list"></div>
+      <details class="fulltext">
+        <summary>Read the full consent &amp; privacy text</summary>
+        <p class="small muted">[Prototype placeholder] The full text would set out controller identity, lawful basis
+        (explicit consent under GDPR Article 9(2)(a) for special-category health data), retention periods,
+        processors, your rights of access, rectification, erasure and withdrawal, and how AI-assisted steps work.
+        Each category above maps to a separately-toggled purpose so consent is specific and granular, not bundled.</p>
+      </details>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="confirm-btn" class="btn primary">Confirm &amp; start</button>
+        <span id="confirm-hint" class="small muted">Identity &amp; therapy disclosures are required to begin.</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Your intake conversation</h3>
+      <p class="small muted">Notice that every message is labelled by who sent it. AI messages are always marked
+        <span style="color:var(--ai);font-weight:700">Beacon AI assistant</span> and note that a human reviews them.</p>
+      <div id="blocked" class="blocked-note" style="display:none">
+        Processing is paused — you’ve withdrawn consent, so the assistant can’t use your data.
+        Turn consent back on to continue. <b>Nothing you typed was processed.</b>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="composer">
+        <input id="composer-input" type="text" placeholder="Type a reply to your intake…" autocomplete="off">
+        <button id="send-btn" class="btn primary">Send</button>
+      </div>
+      <div id="comprehension" class="small" style="display:none;margin-top:12px;padding:10px;border:1px dashed var(--line);border-radius:8px">
+        Quick check — the previous reply came from:
+        <button class="btn small" data-answer="ai">Beacon AI</button>
+        <button class="btn small" data-answer="human">A human</button>
+        <span id="comprehension-result" style="margin-left:8px;font-weight:700"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLINICIAN VIEW ============ -->
+<section id="view-clinician" class="view">
+  <div class="companion">
+    <div class="companion-inner">
+      <span class="who"><span class="dot human"></span>Dr. Niamh Kelly — clinician view</span>
+      <span class="chip">Every AI suggestion is <b>explainable &amp; overridable</b></span>
+      <span class="spacer"></span>
+      <span class="chip">Session override rate: <b id="ovr-rate">0%</b></span>
+    </div>
+  </div>
+  <div class="wrap">
+    <h1>AI suggestions — with the reasoning</h1>
+    <p class="lead">Each suggestion shows <b>why</b> it was made and <b>how confident</b> the model is. Accept it, or override it in one click — overriding requires a reason, which becomes training signal rather than silent disengagement (Aoife §3.2).</p>
+    <div id="suggestions"></div>
+    <div class="card">
+      <h3>Decisions this session</h3>
+      <ul id="decision-log" class="decision-log"><li id="dl-empty" class="muted">No decisions yet.</li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD VIEW ============ -->
+<section id="view-dashboard" class="view">
+  <div class="companion">
+    <div class="companion-inner">
+      <span class="who"><span class="dot human"></span>Trust &amp; safety dashboard</span>
+      <span class="chip">All figures below are <b>synthetic / illustrative</b></span>
+    </div>
+  </div>
+  <div class="wrap">
+    <h1>Trust metrics</h1>
+    <p class="lead">The three diagnostic signals from Aoife’s brief, made measurable: consent-screen abandonment, AI-suggestion override rate, and human-vs-AI comprehension. <b>Synthetic data only.</b></p>
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <h2>Consent-screen abandonment: bundled vs layered</h2>
+      <p class="small muted">Challenge A. The redesigned layered consent flow (right) abandons far less often than the old bundled screen (left).</p>
+      <div class="chart" id="consent-chart"></div>
+      <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Old bundled screen</span><span><span class="sw" style="background:var(--teal-2)"></span>New layered screen</span></div>
+    </div>
+    <div class="card">
+      <h2>AI-suggestion override rate: opaque vs explainable</h2>
+      <p class="small muted">Challenge B. With the explainability layer, clinician overrides drop — mirroring Aoife §3.2 (73.9% → 49.3%).</p>
+      <div class="chart" id="override-chart"></div>
+      <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Opaque tooling</span><span><span class="sw" style="background:var(--teal-2)"></span>Explainable tooling</span></div>
+    </div>
+    <div class="card">
+      <h2>Recent comprehension checks (Challenge C)</h2>
+      <table class="tbl" id="comp-table"></table>
+    </div>
+  </div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================================
+ * Beacon Health — Trust Prototype (SINGLE-FILE / inline build)
+ * Trust-critical guarantees enforced below:
+ *  1. Withdrawing consent HALTS processing immediately (Challenge A; GDPR Art. 9).
+ *  2. No category is processed without active consent for THAT category (Art. 9).
+ *  3. Every AI message carries an unambiguous label (Challenge C; EU AI Act Art. 50).
+ *  4. A clinician override cannot be recorded without a captured reason (Challenge B).
+ * ========================================================================= */
+(function () {
+  "use strict";
+
+  /* ---- SECTION 1: TRUST CORE ---- */
+  var DATA_CATEGORIES = [
+    { id: "identity", label: "Identity & contact", required: true, ai: false,
+      desc: "Your name and contact details, so a therapist can reach you." },
+    { id: "clinical", label: "Therapy disclosures", required: true, ai: false,
+      desc: "What you tell your therapist in sessions — special-category health data (GDPR Art. 9)." },
+    { id: "ai_intake", label: "AI-assisted intake", required: false, ai: true,
+      desc: "Let Beacon’s AI help structure your intake notes before a human therapist reviews them." },
+    { id: "ai_matching", label: "AI therapist matching", required: false, ai: true,
+      desc: "Use AI to suggest the therapist most likely to suit you. A human confirms every match." },
+    { id: "research", label: "Anonymised service improvement", required: false, ai: false,
+      desc: "Use de-identified data to improve Beacon. Never sold to third parties." }
+  ];
+  var SENDER = { HUMAN: "human-therapist", AI: "ai-assistant", SYSTEM: "system" };
+  function nowISO() { return new Date().toISOString(); }
+  function redact(p) { if (p == null) return null; if (typeof p === "string") return "[redacted:" + p.length + " chars]"; return "[redacted]"; }
+  function rate(n, d) { return d === 0 ? 0 : +(n / d).toFixed(4); }
+
+  function ConsentManager() {
+    this.categories = {};
+    DATA_CATEGORIES.forEach(function (c) { this.categories[c.id] = false; }, this);
+    this.processingActive = false; this.everGranted = false; this.queue = []; this.audit = []; this._listeners = [];
+  }
+  ConsentManager.prototype._emit = function (e) { this.audit.push(Object.assign({ at: nowISO() }, e)); this._listeners.forEach(function (fn) { fn(this); }, this); };
+  ConsentManager.prototype.onChange = function (fn) { this._listeners.push(fn); return this; };
+  ConsentManager.prototype.requiredGranted = function () { return DATA_CATEGORIES.filter(function (c) { return c.required; }).every(function (c) { return this.categories[c.id] === true; }, this); };
+  ConsentManager.prototype.setConsent = function (id, v) { if (!(id in this.categories)) throw new Error("Unknown category: " + id); this.categories[id] = !!v; this._emit({ type: "consent.set", category: id, value: !!v }); this._recompute(); return this; };
+  ConsentManager.prototype.confirm = function () { if (!this.requiredGranted()) { this._emit({ type: "consent.confirm.blocked" }); return false; } this.processingActive = true; this.everGranted = true; this._emit({ type: "consent.confirm", state: this.state() }); return true; };
+  /* TRUST-CRITICAL #1 */
+  ConsentManager.prototype.withdrawAll = function () { DATA_CATEGORIES.forEach(function (c) { this.categories[c.id] = false; }, this); this.processingActive = false; var cleared = this.queue.length; this.queue = []; this._emit({ type: "consent.withdraw", clearedJobs: cleared }); return this; };
+  ConsentManager.prototype._recompute = function () { if (this.processingActive && !this.requiredGranted()) { this.processingActive = false; this.queue = []; this._emit({ type: "processing.halted", reason: "required consent removed" }); } };
+  ConsentManager.prototype.state = function () { if (this.processingActive) { return DATA_CATEGORIES.every(function (c) { return this.categories[c.id]; }, this) ? "given" : "partial"; } return this.everGranted ? "withdrawn" : "pending"; };
+  ConsentManager.prototype.isAllowed = function (id) { return this.processingActive === true && this.categories[id] === true; };
+  /* TRUST-CRITICAL #2 */
+  ConsentManager.prototype.process = function (id, payload) { if (!this.isAllowed(id)) { this._emit({ type: "process.blocked", category: id }); return { blocked: true, category: id }; } var job = { category: id, payload: redact(payload), at: nowISO() }; this.queue.push(job); this._emit({ type: "process.ok", category: id }); return { blocked: false, category: id, job: job }; };
+
+  /* TRUST-CRITICAL #3: an unlabelled AI message is impossible to construct */
+  function assertLabelled(msg) { if (msg.isAI && (!msg.label || String(msg.label).trim() === "")) { throw new Error("Article 50 violation: AI message has no disclosure label"); } return true; }
+  function labelMessage(sender, text, opts) { opts = opts || {}; var isAI = sender === SENDER.AI; var msg = { sender: sender, isAI: isAI, text: text, label: isAI ? (opts.label || "Beacon AI assistant") : null, reviewedByHuman: isAI ? !!opts.reviewedByHuman : true, at: nowISO() }; assertLabelled(msg); return msg; }
+
+  function confidenceBand(p) { if (p >= 0.9) return { band: "high", expectedOverride: 0.017 }; if (p >= 0.8) return { band: "moderate", expectedOverride: 0.30 }; return { band: "low", expectedOverride: 0.993 }; }
+  function ClinicianTooling() { this.overrides = []; this.accepts = []; }
+  ClinicianTooling.prototype.accept = function (id) { this.accepts.push({ suggestionId: id, at: nowISO() }); return true; };
+  /* TRUST-CRITICAL #4 */
+  ClinicianTooling.prototype.override = function (id, reason) { if (!reason || String(reason).trim() === "") throw new Error("Override rejected: a reason is required"); this.overrides.push({ suggestionId: id, reason: String(reason).trim(), at: nowISO() }); return true; };
+  ClinicianTooling.prototype.overrideRate = function () { var total = this.overrides.length + this.accepts.length; return total === 0 ? 0 : this.overrides.length / total; };
+
+  function summariseMetrics(events) {
+    var consent = events.consent || [], suggestions = events.suggestions || [], comp = events.comprehension || [];
+    return {
+      consentAbandonmentRate: rate(consent.filter(function (c) { return c.abandoned; }).length, consent.length),
+      overrideRate: rate(suggestions.filter(function (s) { return s.overridden; }).length, suggestions.length),
+      comprehensionAccuracy: rate(comp.filter(function (c) { return c.correct; }).length, comp.length)
+    };
+  }
+
+  /* ---- SECTION 2: SYNTHETIC DATA (not real Beacon data) ---- */
+  var SUGGESTIONS = [
+    { id: "match-8842", kind: "Therapist match", summary: "Suggested match: Dr. Niamh Kelly (CBT, anxiety)", confidence: 0.93,
+      factors: [ { label: "Presenting concern overlap (anxiety, sleep)", weight: 0.41 }, { label: "Therapist specialism (CBT)", weight: 0.28 }, { label: "Availability within 5 days", weight: 0.18 }, { label: "Language & timezone match", weight: 0.13 } ] },
+    { id: "triage-2207", kind: "Triage priority", summary: "Suggested priority: Standard (review within 72h)", confidence: 0.74,
+      factors: [ { label: "Intake risk-screen score (low)", weight: 0.46 }, { label: "No crisis keywords detected", weight: 0.33 }, { label: "First-time patient", weight: 0.21 } ] }
+  ];
+  function makeConsent(s, a) { var r = []; for (var i = 0; i < s; i++) r.push({ abandoned: i < a }); return r; }
+  function makeBool(t, c, k) { var r = []; for (var i = 0; i < t; i++) { var o = {}; o[k] = i < c; r.push(o); } return r; }
+  var DASHBOARD = { consentOld: makeConsent(1000, 380), consentNew: makeConsent(1000, 160), suggestionsOpaque: makeBool(500, 369, "overridden"), suggestionsExplained: makeBool(500, 247, "overridden"), comprehension: makeBool(420, 382, "correct") };
+
+  /* ---- SECTION 3: helpers ---- */
+  var $ = function (id) { return document.getElementById(id); };
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function pct(x) { return Math.round(x * 100) + "%"; }
+  var toastTimer;
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200); }
+
+  /* ---- SECTION 4: PATIENT VIEW ---- */
+  var consent = new ConsentManager();
+  var chatEl;
+  function renderConsentList() {
+    var box = $("consent-list"); box.innerHTML = "";
+    DATA_CATEGORIES.forEach(function (c) {
+      var item = document.createElement("div"); item.className = "consent-item";
+      item.innerHTML = '<div class="meta"><div class="label">' + c.label + (c.required ? '<span class="req">required</span>' : "") + (c.ai ? '<span class="aiflag">AI</span>' : "") + '</div><div class="desc">' + c.desc + "</div></div>" + '<label class="switch"><input type="checkbox" data-id="' + c.id + '"' + (consent.categories[c.id] ? " checked" : "") + '><span class="slider"></span></label>';
+      box.appendChild(item);
+    });
+    box.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.addEventListener("change", function () { consent.setConsent(cb.getAttribute("data-id"), cb.checked); syncCompanion(); }); });
+  }
+  function syncCompanion() {
+    var st = consent.state(); var pill = $("state-pill"); pill.className = "state-pill state-" + st; pill.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+    var active = DATA_CATEGORIES.filter(function (c) { return consent.isAllowed(c.id); }).map(function (c) { return c.label; });
+    $("data-in-use").textContent = active.length ? active.join(", ") : "none yet";
+    document.querySelectorAll('#consent-list input[type="checkbox"]').forEach(function (cb) { cb.checked = consent.categories[cb.getAttribute("data-id")]; });
+    var paused = !consent.processingActive && consent.everGranted;
+    $("blocked").style.display = paused ? "block" : "none";
+    $("confirm-hint").textContent = consent.requiredGranted() ? "Ready to start." : "Identity & therapy disclosures are required to begin.";
+    $("confirm-btn").disabled = !consent.requiredGranted();
+  }
+  function setWho(isAI) { $("who-dot").className = "dot " + (isAI ? "ai" : "human"); $("who-text").textContent = isAI ? "Speaking with: Beacon AI assistant" : "Speaking with: a human therapist"; }
+  function addMessage(msg) {
+    var role = msg.sender === SENDER.AI ? "ai" : (msg.sender === SENDER.HUMAN ? "human" : "patient");
+    var el = document.createElement("div"); el.className = "msg " + role;
+    var tag = msg.isAI ? '<div class="sender-tag">● ' + msg.label + "</div>" : (msg.sender === SENDER.HUMAN ? '<div class="sender-tag">● Human therapist</div>' : '<div class="sender-tag">You</div>');
+    el.innerHTML = tag + escapeHtml(msg.text) + (msg.isAI ? '<div class="review">A human therapist reviews everything I draft.</div>' : "");
+    chatEl.appendChild(el); chatEl.scrollTop = chatEl.scrollHeight; setWho(!!msg.isAI);
+  }
+  function patientSay(text) {
+    var res = consent.process("clinical", text); addMessage({ sender: "patient", isAI: false, text: text });
+    if (res.blocked) { $("blocked").style.display = "block"; return; }
+    setTimeout(function () { addMessage(labelMessage(SENDER.AI, "Thank you for sharing that. I’ve noted it for your therapist. How long have you been feeling this way?", { reviewedByHuman: true })); offerComprehension(true); }, 350);
+  }
+  function offerComprehension(wasAI) { var box = $("comprehension"); box.style.display = "block"; box.setAttribute("data-wasai", wasAI ? "1" : "0"); $("comprehension-result").textContent = ""; }
+  function initPatient() {
+    chatEl = $("chat"); renderConsentList(); consent.onChange(syncCompanion); syncCompanion();
+    $("confirm-btn").addEventListener("click", function () {
+      if (!consent.confirm()) { toast("Please grant the required categories first."); return; }
+      syncCompanion(); toast("Consent confirmed — you’re in control.");
+      if (chatEl.childElementCount === 0) {
+        addMessage(labelMessage(SENDER.HUMAN, "Hi, I’m Dr. Niamh Kelly. I’ll be your therapist. To save us time, our AI assistant will ask a few intake questions first — I review all of it."));
+        setTimeout(function () { addMessage(labelMessage(SENDER.AI, "Hello — I’m Beacon’s AI assistant, not a person. I’ll help structure your intake before Dr. Kelly sees it. What brought you to Beacon today?", { reviewedByHuman: true })); offerComprehension(true); }, 400);
+      }
+    });
+    $("withdraw-btn").addEventListener("click", function () { consent.withdrawAll(); syncCompanion(); toast("Consent withdrawn. All processing stopped immediately."); });
+    $("send-btn").addEventListener("click", sendFromComposer);
+    $("composer-input").addEventListener("keydown", function (e) { if (e.key === "Enter") sendFromComposer(); });
+    function sendFromComposer() { var inp = $("composer-input"); var v = inp.value.trim(); if (!v) return; inp.value = ""; patientSay(v); }
+    $("comprehension").querySelectorAll("button[data-answer]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var wasAI = $("comprehension").getAttribute("data-wasai") === "1"; var said = b.getAttribute("data-answer") === "ai"; var correct = said === wasAI;
+        var r = $("comprehension-result"); r.textContent = correct ? "✓ correct" : "✕ that was the AI"; r.style.color = correct ? "var(--ok)" : "var(--danger)";
+      });
+    });
+  }
+
+  /* ---- SECTION 5: CLINICIAN VIEW ---- */
+  var tool = new ClinicianTooling();
+  function refreshOverrideRate() { $("ovr-rate").textContent = pct(tool.overrideRate()); }
+  function logDecision(id, action, reason) {
+    var log = $("decision-log"); var empty = $("dl-empty"); if (empty) empty.remove();
+    var li = document.createElement("li");
+    li.innerHTML = "<b>" + action + "</b> — " + id + (reason ? ' · reason: "' + escapeHtml(reason) + '"' : "") + ' <span class="muted">(' + new Date().toLocaleTimeString() + ")</span>";
+    log.appendChild(li);
+  }
+  function disableCard(id, label) {
+    var card = $("card-" + id); card.querySelectorAll("button").forEach(function (b) { b.disabled = true; }); card.style.opacity = ".75";
+    var tag = document.createElement("div"); tag.className = "small"; tag.style.marginTop = "8px"; tag.style.fontWeight = "700"; tag.style.color = label === "Accepted" ? "var(--ok)" : "var(--danger)"; tag.textContent = "● " + label; card.appendChild(tag);
+  }
+  function initClinician() {
+    var box = $("suggestions"); box.innerHTML = "";
+    SUGGESTIONS.forEach(function (s) {
+      var band = confidenceBand(s.confidence); var card = document.createElement("div"); card.className = "card"; card.id = "card-" + s.id;
+      var factors = s.factors.map(function (f) { return '<div class="factor"><div class="row"><span>' + f.label + "</span><span>" + pct(f.weight) + '</span></div><div class="bar"><span style="width:' + (f.weight * 100) + '%"></span></div></div>'; }).join("");
+      card.innerHTML = "<h3>" + s.kind + "</h3>" + '<p style="margin:2px 0 8px"><b>' + s.summary + "</b></p>" +
+        '<div class="conf">Model confidence: <span class="badge conf-' + band.band + '">' + pct(s.confidence) + " · " + band.band + "</span>" + '<span class="small muted">(expected override at this band ≈ ' + pct(band.expectedOverride) + ")</span></div>" +
+        '<div style="margin-top:10px"><div class="small muted" style="margin-bottom:4px">Why this was suggested — top factors:</div>' + factors + "</div>" +
+        '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" data-accept="' + s.id + '">Accept</button><button class="btn" data-override="' + s.id + '">Override…</button></div>' +
+        '<div class="override-box" id="ob-' + s.id + '" style="display:none"><textarea id="reason-' + s.id + '" placeholder="Reason for overriding (required) — e.g. patient requested a female therapist"></textarea><div style="margin-top:8px"><button class="btn danger" data-confirm-override="' + s.id + '">Confirm override</button></div></div>';
+      box.appendChild(card);
+    });
+    box.querySelectorAll("[data-accept]").forEach(function (b) { b.addEventListener("click", function () { var id = b.getAttribute("data-accept"); tool.accept(id); logDecision(id, "Accepted", null); disableCard(id, "Accepted"); refreshOverrideRate(); }); });
+    box.querySelectorAll("[data-override]").forEach(function (b) { b.addEventListener("click", function () { var id = b.getAttribute("data-override"); $("ob-" + id).style.display = "block"; $("reason-" + id).focus(); }); });
+    box.querySelectorAll("[data-confirm-override]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-confirm-override"); var reason = $("reason-" + id).value;
+        try { tool.override(id, reason); } catch (e) { toast("A reason is required to override."); $("reason-" + id).focus(); return; }
+        logDecision(id, "Overridden", reason.trim()); disableCard(id, "Overridden"); refreshOverrideRate();
+      });
+    });
+    refreshOverrideRate();
+  }
+
+  /* ---- SECTION 6: DASHBOARD VIEW ---- */
+  function initDashboard() {
+    var mNew = summariseMetrics({ consent: DASHBOARD.consentNew, suggestions: DASHBOARD.suggestionsExplained, comprehension: DASHBOARD.comprehension });
+    var mOld = summariseMetrics({ consent: DASHBOARD.consentOld, suggestions: DASHBOARD.suggestionsOpaque, comprehension: DASHBOARD.comprehension });
+    function kpi(value, label, delta, goodIsDown) { var cls = (goodIsDown ? (delta < 0) : (delta > 0)) ? "up" : "down"; var arrow = delta < 0 ? "▼" : "▲"; return '<div class="kpi"><div class="v">' + value + '</div><div class="l">' + label + '</div><div class="delta ' + cls + '">' + arrow + " " + Math.abs(delta) + " pts vs baseline</div></div>"; }
+    $("kpis").innerHTML = kpi(pct(mNew.consentAbandonmentRate), "Consent-screen abandonment", Math.round((mNew.consentAbandonmentRate - mOld.consentAbandonmentRate) * 100), true) + kpi(pct(mNew.overrideRate), "AI-suggestion override rate", Math.round((mNew.overrideRate - mOld.overrideRate) * 100), true) + kpi(pct(mNew.comprehensionAccuracy), "Human-vs-AI comprehension", 0, false);
+    function col(val, max, cap, alt) { var h = Math.round((val / max) * 130) + 6; return '<div class="col"><div class="small" style="font-weight:700">' + Math.round(val) + '%</div><div class="b ' + alt + '" style="height:' + h + 'px"></div><div class="cap">' + cap + "</div></div>"; }
+    function pairChart(elId, oldVal, newVal) { var max = Math.max(oldVal, newVal, 1); $(elId).innerHTML = col(oldVal, max, "Old", "alt") + col(newVal, max, "New", ""); }
+    pairChart("consent-chart", mOld.consentAbandonmentRate * 100, mNew.consentAbandonmentRate * 100);
+    pairChart("override-chart", mOld.overrideRate * 100, mNew.overrideRate * 100);
+    var rows = "<tr><th>#</th><th>Recognised correctly?</th></tr>";
+    DASHBOARD.comprehension.slice(0, 8).forEach(function (c, i) { rows += "<tr><td>" + (i + 1) + "</td><td>" + (c.correct ? '<span style="color:var(--ok);font-weight:700">✓ yes</span>' : '<span style="color:var(--danger);font-weight:700">✕ no</span>') + "</td></tr>"; });
+    $("comp-table").innerHTML = rows;
+  }
+
+  /* ---- SECTION 7: view switching + boot ---- */
+  var built = { patient: false, clinician: false, dashboard: false };
+  function showView(name) {
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+    $("view-" + name).classList.add("active");
+    document.querySelectorAll(".topnav button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-view") === name); });
+    if (!built[name]) { if (name === "patient") initPatient(); else if (name === "clinician") initClinician(); else if (name === "dashboard") initDashboard(); built[name] = true; }
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll(".topnav button").forEach(function (b) { b.addEventListener("click", function () { showView(b.getAttribute("data-view")); }); });
+  showView("patient");
+
+  window.BeaconTrust = { DATA_CATEGORIES: DATA_CATEGORIES, SENDER: SENDER, ConsentManager: ConsentManager, labelMessage: labelMessage, assertLabelled: assertLabelled, confidenceBand: confidenceBand, ClinicianTooling: ClinicianTooling, summariseMetrics: summariseMetrics };
+})();
+</script>
+</body>
+</html>
